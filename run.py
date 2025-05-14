@@ -16,13 +16,13 @@ def train_local(net, graph, feats, opt, args, init=True):
     memo = {}
     labels = graph.ndata['label']
     num_nodes=  graph.num_nodes()
-
     device = args.gpu
     if device >= 0:
         torch.cuda.set_device(device)
         net = net.to(device)
         labels = labels.cuda()
         feats = feats.cuda()
+        graph = graph.to(device)
 
     def init_xavier(m):
         if type(m) == nn.Linear:
@@ -41,7 +41,7 @@ def train_local(net, graph, feats, opt, args, init=True):
     all_idx = list(range(num_nodes))
     memorybank = []#正太池
     # 创建一个形状为 (select_epoch,节点总数) 的全零矩阵，用于存储每个epoch中每个节点的异常分数。
-    train_ano_score = torch.zeros((args.local_epochs, num_nodes), dtype=torch.float)
+    train_ano_score = torch.zeros((args.local_epochs, num_nodes), dtype=torch.float,device=device)
 
 #
     for epoch in range(args.local_epochs):
@@ -62,7 +62,7 @@ def train_local(net, graph, feats, opt, args, init=True):
             best = loss.item()
             torch.save(net.state_dict(), 'best_local_model.pkl')
  #
-        pos = graph.ndata['pos']
+        pos = graph.ndata['pos'].to(device)
         local_scores = -pos.detach()
         train_ano_score[epoch, all_idx] = local_scores
  #
